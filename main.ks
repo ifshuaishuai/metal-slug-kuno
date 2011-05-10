@@ -1,18 +1,18 @@
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
    (c) 2008 Jesthony Maquiling [14 Aug]
-   (c) 2011 Mj Mendoza IV [08 May]
+   (c) 2011 Mj Mendoza IV [10 May]
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
  
 Var:Create(
 	Mummy, 
-		Number x, 
-		Number y, 
-		Number img, 
-		Number alive, 
-		Number speed, 
-		Number attack, 
-		Number imgdead, 
-		Number burning
+		Number x,
+		Number y,
+		Number img,
+		Boolean alive,
+		Number speed,
+		Number attack,
+		Number imgdead,
+		Boolean burning
 )
 Array:New mummies[20]:Mummy;
 
@@ -20,6 +20,8 @@ Array:New WalkingR[13]:Number;
 Array:New StandingR[8]:Number;
 Array:New WalkingL[13]:Number;
 Array:New StandingL[8]:Number;
+Array:New JumpL[22]:Number;
+Array:New JumpR[22]:Number;
 Array:New ShootL[17]:Number;
 Array:New SmokeL[17]:Number;
 Array:New ShootR[17]:Number;
@@ -35,12 +37,18 @@ Array:New AttackL[22]:Number;
 Array:New Dead[19]:Number;
 Array:New Burn[44]:Number;
 
-Var:Number ctr, crt = 1, car, pass, c=1, playerFaceRight = true, d=1, playerIsShooting = false, l = 1, rrr = 640, R = 1, RI = 1, RobI = false, Displacement, PlayermapX, MummyFaceR;
-Var:Number asd, tmp, i, MummyFaceL, shooting_range, Screen2, ddd=1, PlayerAlive=true, Points=0, exit, Logo, Logo2, BG;
+Var:Number ctr, car, playerFaceRight = true, l = 1, rrr = 640, R = 1, RI = 1, RobI = false, Displacement, playerMapX, MummyFaceR;
+Var:Number asd, tmp, i, MummyFaceL, shooting_range, Screen2, Points=0, exit, Logo, Logo2, BG;
 
 Var:Number tmpLvl;
 Var:Number Level = 1;
 Var:Number zombieAlive = 3;
+Var:Number playerState = 0;
+Var:Number STATE_IDLE  = 0;
+Var:Number STATE_WALK  = 1;
+Var:Number STATE_JUMP  = 2;
+Var:Number STATE_SHOOT = 3;
+Var:Number STATE_DIE   = 4;
 
 //Var:Boolean Key_W;
 Var:Boolean Key_A;
@@ -56,57 +64,63 @@ function initGFX() {
 	Image:Load("img\\menu\\Logo2.png", Logo2)
 	
 	for (ctr = 1; ctr <= 22; ctr++) {
-		Image:Load("img\\Mummy\\Attack\\R (" + ctr + ").png", pass)
-			AttackR[ctr - 1] = pass;
-		Image:Load("img\\Mummy\\Attack\\L (" + ctr + ").png", pass)
-			AttackL[ctr - 1] = pass;
+		Image:Load("img\\Mummy\\Attack\\R (" + ctr + ").png", tmp)
+			AttackR[ctr - 1] = tmp;
+		Image:Load("img\\Mummy\\Attack\\L (" + ctr + ").png", tmp)
+			AttackL[ctr - 1] = tmp;
 	}
 	for (ctr = 1; ctr <= 44; ctr++) {
-		Image:Load("img\\Mummy\\Burn\\(" + ctr + ").png", pass)
-			Burn[ctr - 1] = pass;
+		Image:Load("img\\Mummy\\Burn\\(" + ctr + ").png", tmp)
+			Burn[ctr - 1] = tmp;
 	}	
 	for (ctr = 1; ctr <= 18; ctr++) {
-		Image:Load("img\\Player\\Dies\\(" + ctr + ").png", pass)
-			Dead[ctr - 1] = pass;
+		Image:Load("img\\Player\\Dies\\(" + ctr + ").png", tmp)
+			Dead[ctr - 1] = tmp;
 		
-		Image:Load("img\\Mummy\\Walk\\R (" + ctr + ").png", pass)
-			MummiesR[ctr - 1] = pass;
-		Image:Load("img\\Mummy\\Walk\\L (" + ctr + ").png", pass)
-			MummiesL[ctr - 1] = pass;
+		Image:Load("img\\Mummy\\Walk\\R (" + ctr + ").png", tmp)
+			MummiesR[ctr - 1] = tmp;
+		Image:Load("img\\Mummy\\Walk\\L (" + ctr + ").png", tmp)
+			MummiesL[ctr - 1] = tmp;
 	}
 	for (ctr = 1; ctr <= 17; ctr++){
-		Image:Load("img\\Robot\\Walk\\R (" + ctr + ").png", pass)
-			RobotR[ctr - 1] = pass;
-		Image:Load("img\\Robot\\Walk\\L (" + ctr + ").png", pass)
-			RobotL[ctr - 1] = pass;
+		Image:Load("img\\Robot\\Walk\\R (" + ctr + ").png", tmp)
+			RobotR[ctr - 1] = tmp;
+		Image:Load("img\\Robot\\Walk\\L (" + ctr + ").png", tmp)
+			RobotL[ctr - 1] = tmp;
 	}
 	for (ctr = 1; ctr <=  5; ctr++) {
-		Image:Load("img\\Robot\\Idle\\R (" + ctr + ").png", pass)
-			RobotIR[ctr - 1] = pass;
-		Image:Load("img\\Robot\\Idle\\L (" + ctr + ").png", pass)
-			RobotIL[ctr - 1] = pass;
+		Image:Load("img\\Robot\\Idle\\R (" + ctr + ").png", tmp)
+			RobotIR[ctr - 1] = tmp;
+		Image:Load("img\\Robot\\Idle\\L (" + ctr + ").png", tmp)
+			RobotIL[ctr - 1] = tmp;
 	}
 	for (ctr = 1; ctr <= 12; ctr++) {
-		Image:Load("img\\Player\\Walk\\R (" + ctr + ").png", pass)
-			WalkingR[ctr - 1] = pass;
-		Image:Load("img\\Player\\Walk\\L (" + ctr + ").png", pass)
-			WalkingL[ctr - 1] = pass;
+		Image:Load("img\\Player\\Walk\\R (" + ctr + ").png", tmp)
+			WalkingR[ctr - 1] = tmp;
+		Image:Load("img\\Player\\Walk\\L (" + ctr + ").png", tmp)
+			WalkingL[ctr - 1] = tmp;
 	}
 	for (ctr = 1; ctr <=  7; ctr++) {
-		Image:Load("img\\Player\\Idle\\R (" + ctr + ").png", pass)
-			StandingR[ctr - 1] = pass;
-		Image:Load("img\\Player\\Idle\\L (" + ctr + ").png", pass)
-			StandingL[ctr - 1] = pass;
+		Image:Load("img\\Player\\Idle\\R (" + ctr + ").png", tmp)
+			StandingR[ctr - 1] = tmp;
+		Image:Load("img\\Player\\Idle\\L (" + ctr + ").png", tmp)
+			StandingL[ctr - 1] = tmp;
+	}
+	for (ctr = 1; ctr <= 22; ctr++) {
+		Image:Load("img\\Player\\Jump\\R (" + ctr + ").png", tmp)
+			JumpR[ctr - 1] = tmp;
+		Image:Load("img\\Player\\Jump\\L (" + ctr + ").png", tmp)
+			JumpL[ctr - 1] = tmp;
 	}
 	for (ctr = 1; ctr <= 16; ctr++) {
-		Image:Load("img\\Player\\Shoot\\R (" + ctr + ").png", pass)
-			ShootR[ctr - 1] = pass;
-		Image:Load("img\\Player\\Shoot\\L (" + ctr + ").png", pass)
-			ShootL[ctr - 1] = pass;
-		Image:Load("img\\Smoke\\R (" + ctr + ").png", pass)
-			SmokeR[ctr - 1] = pass;
-		Image:Load("img\\Smoke\\L (" + ctr + ").png", pass)
-			SmokeL[ctr - 1] = pass;
+		Image:Load("img\\Player\\Shoot\\R (" + ctr + ").png", tmp)
+			ShootR[ctr - 1] = tmp;
+		Image:Load("img\\Player\\Shoot\\L (" + ctr + ").png", tmp)
+			ShootL[ctr - 1] = tmp;
+		Image:Load("img\\Smoke\\R (" + ctr + ").png", tmp)
+			SmokeR[ctr - 1] = tmp;
+		Image:Load("img\\Smoke\\L (" + ctr + ").png", tmp)
+			SmokeL[ctr - 1] = tmp;
 	}
 }
 
@@ -124,8 +138,7 @@ function main() {
 		ctr = 1;
 		Points = 0;
 		exit = false;
-		PlayerAlive = true;
-		PlayermapX = 640;
+		playerMapX = 640;
 		
 		spawnNewMummy()
 		
@@ -146,23 +159,19 @@ function main() {
 				Robotic()
 				Mummy()
 				
-				if (PlayerAlive == true) {
-					Player_Alive()
-				} else {
-					Player_Killed()
-				}
+				PlayerStateMachine()
 				
-				if ( (300 - PlayermapX) > 0) {
+				if ( (300 - playerMapX) > 0) {
 					Image:Blit(0, 20, Screen2, screen)
-				} else if (300 + PlayermapX < 1266 - 48) { //48 is player-walk-image-width: see Player\Walk\L (1).png
-					Image:Blit(300 - PlayermapX, 20, Screen2, screen)
+				} else if (300 + playerMapX < 1266 - 48) { //48 is player-walk-image-width: see Player\Walk\L (1).png
+					Image:Blit(300 - playerMapX, 20, Screen2, screen)
 				} else {
 					Image:Blit(600 - 1266 + 48, 20, Screen2, screen) //48 is player-walk-image-width: see Player\Walk\L (1).png
 				}
 				Screen:PrintString(Points)
 			Screen:Render()
 		}
-	//end main loop
+	//main loop
 	
 		B3 = false;
 		while (B3 == false) {
@@ -173,109 +182,12 @@ function main() {
 				Screen:GoToXY(80, 220)
 				Screen:PrintString("Play Again? Press Enter")
 			Screen:Render()
-			if (B3 == true) {
-				B3 = true;
+			if (B1 == true) {
+				B1 = false;
+				Konsol:Message("coded by Toto Maquiling\n      and Mj Mendoza IV", "Metal Slug Kuno")
+				Konsol:Exit()
 			}
 		}
-		if (B4 == false) {
-			B4 = false;
-			Screen:Hide()
-			Konsol:Message("coded by Toto Maquiling", "Metal Slug Kuno")
-			Konsol:Exit()
-		}
-	}
-}
-
-function WalkRight() {
-	if (ctr >= 12) {
-		ctr = 0;
-	}
-	
-	Image:TBlit(PlayermapX, 140, WalkingR[ctr], Screen2)
-	
-	PlayermapX += 4;
-	if (PlayermapX > 1266 - 48) {
-		PlayermapX = 1266 - 48;
-	}
-}
-
-function WalkLeft() {
-	if (ctr >= 12) {
-		ctr = 0;
-	}
-	
-	Image:TBlit((PlayermapX-10), 140, WalkingL[ctr], Screen2)
-	
-	PlayermapX -= 4;
-	if (PlayermapX < 0) {
-		PlayermapX = 0;
-	}
-}
-
-function StandingRight() {
-	if (ctr >= 7) {
-		ctr = 0;
-	}
-	
-	Image:TBlit(PlayermapX, 143, StandingR[ctr], Screen2)
-}
-
-function StandingLeft() {
-	if (ctr >= 7) {
-		ctr = 0;
-	}
-	
-	Image:TBlit(PlayermapX, 143, StandingL[ctr], Screen2)
-}
-
-function Player_Movement() {
-	ctr++;
-	if (playerFaceRight == true) {
-		if (BR == true) {
-			WalkRight()
-		} else if (Key_D == true) {
-			WalkRight()
-		} else {
-			StandingRight()
-			if (BL == true) {
-				playerFaceRight = false;
-			} else if (Key_A == true) {
-				playerFaceRight = false;
-			}
-		}
-	} else {
-		if (BL == true) {
-			WalkLeft()
-		} else if (Key_A == true) {
-			WalkLeft()
-		} else {
-			StandingLeft()
-			if (BR == true) {
-				playerFaceRight = true;
-			} else if (Key_D == true) {
-				playerFaceRight = true;
-			}
-		}
-	}
-}	
-
-function ShootLeft() {
-	Image:TBlit(PlayermapX, 143, ShootL[crt], Screen2)
-	Image:TBlit(PlayermapX - 90, 123, SmokeL[crt], Screen2)
-	if (crt < 16) {
-		crt++;
-	} else {
-		playerIsShooting = false;
-	}
-}
-	
-function ShootRight() {
-	Image:TBlit(PlayermapX, 143, ShootR[crt], Screen2)
-	Image:TBlit(PlayermapX + 35, 123, SmokeR[crt], Screen2)
-	if (crt < 16) {
-		crt++;
-	} else {
-		playerIsShooting = false;
 	}
 }
 
@@ -290,8 +202,8 @@ function Mummy() {
 			if (mummies[asd].alive == true) {
 				if (playerFaceRight == true) {
 					if (mummies[asd].x < shooting_range) {
-						if (mummies[asd].x > (PlayermapX + 20)) {
-							if (playerIsShooting == true) {
+						if (mummies[asd].x > (playerMapX + 20)) {
+							if (playerState == STATE_SHOOT) {
 								mummies[asd].burning = true;
 							} else {
 								Mummy_AnimateAlive(asd)
@@ -304,8 +216,8 @@ function Mummy() {
 					}
 				} else {
 					if (mummies[asd].x > shooting_range) {
-						if (mummies[asd].x < PlayermapX) {
-							if (playerIsShooting == true) {	
+						if (mummies[asd].x < playerMapX) {
+							if (playerState == STATE_SHOOT) {	
 								mummies[asd].burning = true;
 							} else {
 								Mummy_AnimateAlive(asd)
@@ -323,7 +235,7 @@ function Mummy() {
 }
 
 function Robotic() {
-	Displacement = PlayermapX - rrr;
+	Displacement = playerMapX - rrr;
 	if (Displacement < 0) {
 		Displacement = Displacement * -1;
 	}
@@ -348,7 +260,7 @@ function Robotic() {
 			}
 		}
 	} else {
-		if (PlayermapX >= rrr) {
+		if (playerMapX >= rrr) {
 			Image:TBlit(rrr, 115, RobotR[R], Screen2)
 			R++;
 			if (R >= 16) {
@@ -374,18 +286,18 @@ function spawnNewMummy() {
 
 function initMummy(Number index, Number speeddemon) { 
 	Math:Random(0, 1266, tmp)
-	if (tmp > (PlayermapX-100)) {
-		if (tmp < (PlayermapX + 100)) {
-			if (tmp > PlayermapX) {
+	if (tmp > (playerMapX-100)) {
+		if (tmp < (playerMapX + 100)) {
+			if (tmp > playerMapX) {
 				tmp += 200;
 			} else {
 				tmp -= 200;
 			}
 		}
 	}
-//	Konsol:Log(tmp)
+	
 	mummies[index].x = tmp; 
-	mummies[index].alive = 1; 
+	mummies[index].alive = true; 
 	if (speeddemon == 0 ) {
 		Math:Random(1, 2, tmp)
 	} else {
@@ -399,8 +311,14 @@ function initMummy(Number index, Number speeddemon) {
 	mummies[index].burning = false;	
 } 
 
+function PlayerTryKill() {
+	if (playerState != STATE_JUMP) {
+		playerState = STATE_DIE;
+		ctr = 0;
+	}
+}
 function Mummy_AnimateAlive(Number p_index) {
-	if (PlayermapX >= mummies[p_index].x + 50) {
+	if (playerMapX >= mummies[p_index].x + 50) {
 		Image:TBlit(mummies[p_index].x, 137, MummiesR[mummies[p_index].img], Screen2)
 		if (mummies[p_index].img < 16) {
 			l=mummies[p_index].img + 1;
@@ -413,7 +331,7 @@ function Mummy_AnimateAlive(Number p_index) {
 		MummyFaceR=true;
 		MummyFaceL=false;
 		mummies[p_index].attack = 1;
-	} else if (PlayermapX + 50 <= mummies[p_index].x) {
+	} else if (playerMapX + 50 <= mummies[p_index].x) {
 		Image:TBlit(mummies[p_index].x, 137, MummiesL[mummies[p_index].img], Screen2)
 		if (mummies[p_index].img < 16) {
 			l = mummies[p_index].img + 1;
@@ -427,24 +345,25 @@ function Mummy_AnimateAlive(Number p_index) {
 		MummyFaceR=false;
 		mummies[p_index].attack = 1;
 	} else {
-		if (PlayermapX >= mummies[p_index].x + 5) {
-			MummyFaceR=true;
-			MummyFaceL=false;
-		} else if (PlayermapX + 5 <= mummies[p_index].x) {
-			MummyFaceR=false;
-			MummyFaceL=true;
+		if (playerMapX >= mummies[p_index].x + 5) {
+			MummyFaceR = true;
+			MummyFaceL = false;
+		} else if (playerMapX + 5 <= mummies[p_index].x) {
+			MummyFaceR = false;
+			MummyFaceL = true;
 		}
 		if (MummyFaceR == true) {
 			Image:TBlit(mummies[p_index].x, 126, AttackR[mummies[p_index].attack], Screen2)
 			if (mummies[p_index].attack < 22) {
-				tmp=mummies[p_index].attack + 1;
-				mummies[p_index].attack = tmp;
+				mummies[p_index].attack = mummies[p_index].attack + 1;
 				if (mummies[p_index].attack == 11 ) {
-					if (PlayermapX >= (mummies[p_index].x + 50)) {
-						if (PlayermapX <= (mummies[p_index].x + 20)) {
-							PlayerAlive=false;
+					if (playerMapX >= (mummies[p_index].x + 50)) {
+						if (playerMapX <= (mummies[p_index].x + 20)) {
+							Konsol:Log("AAA")
+							PlayerTryKill()
 						} else {
-							PlayerAlive=false;
+							Konsol:Log("BBB")
+							PlayerTryKill()
 						}
 					}
 				}
@@ -454,15 +373,14 @@ function Mummy_AnimateAlive(Number p_index) {
 		} else if (MummyFaceL == true) {
 			Image:TBlit(mummies[p_index].x-50, 126, AttackL[mummies[p_index].attack], Screen2)
 			if (mummies[p_index].attack < 22) {
-				tmp=mummies[p_index].attack + 1;
-				mummies[p_index].attack = tmp;
-
+				mummies[p_index].attack = mummies[p_index].attack + 1;
 				if (mummies[p_index].attack == 11) {
-					if (PlayermapX >= (mummies[p_index].x - 30)) {
-						if (PlayermapX <= mummies[p_index].x) {
-							PlayerAlive=false;
+					if (playerMapX >= (mummies[p_index].x - 30)) {
+						if (playerMapX <= mummies[p_index].x) {
+							PlayerTryKill()
 						} else {
-							PlayerAlive=false;
+							Konsol:Log("DDD")
+							PlayerTryKill()
 						}
 					}
 				}
@@ -500,38 +418,135 @@ function MummyAnimateBurning(Number p_index) {
 	}
 }
 
-function Player_Killed() {
-	Image:TBlit(PlayermapX - 5, 143, Dead[ddd], Screen2)
-	if (ddd < 19) {
-		ddd++;
+function PlayerStateMachine() {
+	ctr++;
+	if (playerState == STATE_WALK) {
+		PlayerWalk()
+	} else if (playerState == STATE_JUMP) {
+		PlayerJump()
+	} else if (playerState == STATE_SHOOT) {
+		PlayerShoot()
+	} else if (playerState == STATE_DIE) {
+		PlayerKilled()
 	} else {
-		PlayerAlive = false;
-		exit=true;
-		ddd = 0;
+		//get user input
+		if (B4 == true) {
+			if (playerState != STATE_JUMP) {
+				playerState = STATE_JUMP;
+				ctr = 0;
+			}
+		} else if (B3 == true) {
+			if (playerState != STATE_SHOOT) {
+				playerState = STATE_SHOOT;
+				ctr = 0;
+			}
+		} else if (Key_D == true) {
+			playerState = STATE_WALK;
+			playerFaceRight = true;
+			shooting_range = playerMapX + 100;
+		} else if (Key_A == true) {
+			playerState = STATE_WALK;
+			playerFaceRight = false;
+			shooting_range = playerMapX - 70;
+		} else {
+			//play idle animation
+			PlayerStand()
+		}
 	}
 }
 
-function Player_Alive() {
-	if (B3 == true) {
-		if (playerIsShooting == false) {
-			crt = 1;
-			playerIsShooting = true;
-		}
+function PlayerWalk() {
+	if (ctr >= 12) {
+		ctr = 0;
 	}
-	if (playerIsShooting == true) {
-		if (playerFaceRight == true) {
-			ShootRight()
-		} else {
-			ShootLeft()
+	
+	if (playerFaceRight == true) { 
+		Image:TBlit(playerMapX, 140, WalkingR[ctr], Screen2)
+		playerMapX += 4;
+		if (playerMapX > 1266 - 48) {
+			playerMapX = 1266 - 48;
+		}
+		if (Key_D == false) {
+			playerState = STATE_IDLE;
 		}
 	} else {
-		Player_Movement()
+		Image:TBlit((playerMapX - 10), 140, WalkingL[ctr], Screen2)
+		playerMapX -= 4;
+		if (playerMapX < 0) {
+			playerMapX = 0;
+		}
+		if (Key_A == false) {
+			playerState = STATE_IDLE;
+		}
+	}
+	if (B4 == true) {
+		if (playerState != STATE_JUMP) {
+			playerState = STATE_JUMP;
+			ctr = 0;
+		}
+	}
+}
+
+function PlayerJump() {
+	if (ctr > 21) {
+		playerState = STATE_IDLE;
+	} else {
+		if (playerFaceRight == true) {
+			if (Key_D == true) {
+				playerMapX += 6;
+				if (playerMapX > 1266 - 48) {
+					playerMapX = 1266 - 48;
+				}
+			} else if (Key_A == true) {
+				playerFaceRight = false;
+			}
+			Image:TBlit(playerMapX, 80, JumpR[ctr], Screen2)
+		} else {
+			if (Key_A == true) {
+				playerMapX -= 6;
+				if (playerMapX < 0) {
+					playerMapX = 0;
+				}
+			} else if (Key_D == true) {
+				playerFaceRight = true;
+			}
+			Image:TBlit(playerMapX, 80, JumpL[ctr], Screen2)
+		}
+	}
+}
+
+function PlayerShoot() {
+	if (ctr > 16) {
+		playerState = STATE_IDLE;
+	} else {
+		if (playerFaceRight == true) {
+			Image:TBlit(playerMapX, 143, ShootR[ctr], Screen2)
+			Image:TBlit(playerMapX + 35, 123, SmokeR[ctr], Screen2)
+		} else {
+			Image:TBlit(playerMapX, 143, ShootL[ctr], Screen2)
+			Image:TBlit(playerMapX - 90, 123, SmokeL[ctr], Screen2)
+		}
+	}
+}
+
+function PlayerStand() {
+	if (ctr >= 7) {
+		ctr = 0;
 	}
 	
 	if (playerFaceRight == true) {
-		shooting_range = PlayermapX + 100;
+		Image:TBlit(playerMapX, 143, StandingR[ctr], Screen2)
 	} else {
-		shooting_range = PlayermapX - 70;
+		Image:TBlit(playerMapX, 143, StandingL[ctr], Screen2)
 	}
 }
 
+function PlayerKilled() {
+	if (ctr >= 19) {
+		playerState = STATE_IDLE;
+		exit = true;
+		ctr = 0;
+	} else {
+		Image:TBlit(playerMapX - 5, 143, Dead[ctr], Screen2)
+	}
+}
