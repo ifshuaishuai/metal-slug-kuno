@@ -38,7 +38,7 @@ Array:New Dead[19]:Number;
 Array:New Burn[44]:Number;
 
 Var:Number ctr, car, playerFaceRight = true, l = 1, rrr = 640, R = 1, RI = 1, RobI = false, Displacement, playerMapX, MummyFaceR;
-Var:Number asd, tmp, i, MummyFaceL, shooting_range, Screen2, Points=0, exit, Logo, Logo2, BG;
+Var:Number asd, tmp, i, MummyFaceL, shooting_range, Screen2, Points=0, exit, LogoEnd, LogoMain, BG;
 
 Var:Number tmpLvl;
 Var:Number Level = 1;
@@ -60,8 +60,8 @@ function initGFX() {
 	Image:New(1266, 443, Screen2)
 	Image:Load("img\\Map\\BG.png", BG)
 	Image:Load("img\\Map\\car.png", car)
-	Image:Load("img\\menu\\Logo.png", Logo)
-	Image:Load("img\\menu\\Logo2.png", Logo2)
+	Image:Load("img\\menu\\LogoEnd.png", LogoEnd)
+	Image:Load("img\\menu\\LogoMain.png", LogoMain)
 	
 	for (ctr = 1; ctr <= 22; ctr++) {
 		Image:Load("img\\Mummy\\Attack\\R (" + ctr + ").png", tmp)
@@ -145,8 +145,8 @@ function main() {
 		B3 = false;
 		while (B3 == false) {
 			Screen:CLS()
-				Image:Blit(75, 20, Logo2, screen)
-				Screen:GoToXY(90, 200)
+				Image:TBlit(160, 20, LogoMain, screen)
+				Screen:GoToXY(240, 350)
 				Screen:PrintString("Press Enter To Play")
 			Screen:Render()
 		}
@@ -178,7 +178,7 @@ function main() {
 			Screen:CLS()
 				Screen:GoToXY(10, 30)
 				Screen:PrintString("Your Score is " + Points + "\n Thank You for playing. \n Please visit our website at \n http://www.konsolscript.org")
-				Image:Blit(50, 100, Logo, screen)
+				Image:Blit(50, 100, LogoEnd, screen)
 				Screen:GoToXY(80, 220)
 				Screen:PrintString("Play Again? Press Enter")
 			Screen:Render()
