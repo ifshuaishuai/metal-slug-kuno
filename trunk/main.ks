@@ -1,6 +1,6 @@
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
    (c) 2008 Jesthony Maquiling [14 Aug]
-   (c) 2011 Mj Mendoza IV [10 May]
+   (c) 2011 Mj Mendoza IV [12 May]
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
  
 Var:Create(
@@ -21,6 +21,8 @@ Array:New WalkingL[13]:Number;
 Array:New StandingL[8]:Number;
 Array:New JumpL[22]:Number;
 Array:New JumpR[22]:Number;
+Array:New CallL[24]:Number;
+Array:New CallR[24]:Number;
 Array:New ShootL[17]:Number;
 Array:New SmokeL[17]:Number;
 Array:New ShootR[17]:Number;
@@ -43,11 +45,13 @@ Var:Number tmpLvl;
 Var:Number Level = 1;
 Var:Number zombieAlive = 3;
 Var:Number playerState = 0;
-Var:Number STATE_IDLE  = 0;
-Var:Number STATE_WALK  = 1;
-Var:Number STATE_JUMP  = 2;
-Var:Number STATE_SHOOT = 3;
-Var:Number STATE_DIE   = 4;
+
+Var:Number STATE_IDLE   = 0;
+Var:Number STATE_WALK   = 1;
+Var:Number STATE_JUMP   = 2;
+Var:Number STATE_ATTACK = 3;
+Var:Number STATE_DIE    = 4;
+Var:Number STATE_CALL   = 5;
 
 //Var:Boolean Key_W;
 Var:Boolean Key_A;
@@ -111,6 +115,12 @@ function initGFX() {
 			JumpR[ctr - 1] = tmp;
 		Image:Load("img\\Player\\Jump\\L (" + ctr + ").png", tmp)
 			JumpL[ctr - 1] = tmp;
+	}
+	for (ctr = 1; ctr <= 24; ctr++) {
+		Image:Load("img\\Player\\Call\\R (" + ctr + ").png", tmp)
+			CallR[ctr - 1] = tmp;
+		Image:Load("img\\Player\\Call\\L (" + ctr + ").png", tmp)
+			CallL[ctr - 1] = tmp;
 	}
 	for (ctr = 1; ctr <= 16; ctr++) {
 		Image:Load("img\\Player\\Shoot\\R (" + ctr + ").png", tmp)
@@ -202,7 +212,7 @@ function MummyStateMachine() {
 				if (playerFaceRight == true) {
 					if (mummies[i].x < shooting_range) {
 						if (mummies[i].x > (playerMapX + 20)) {
-							if (playerState == STATE_SHOOT) {
+							if (playerState == STATE_ATTACK) {
 								mummies[i].state = STATE_DIE;
 							}
 						}
@@ -210,7 +220,7 @@ function MummyStateMachine() {
 				} else {
 					if (mummies[i].x > shooting_range) {
 						if (mummies[i].x < playerMapX) {
-							if (playerState == STATE_SHOOT) {	
+							if (playerState == STATE_ATTACK) {	
 								mummies[i].state = STATE_DIE;
 							}
 						}
@@ -388,10 +398,12 @@ function PlayerStateMachine() {
 		PlayerWalk()
 	} else if (playerState == STATE_JUMP) {
 		PlayerJump()
-	} else if (playerState == STATE_SHOOT) {
+	} else if (playerState == STATE_ATTACK) {
 		PlayerShoot()
 	} else if (playerState == STATE_DIE) {
 		PlayerKilled()
+	} else if (playerState == STATE_CALL) {
+		PlayerCall()
 	} else {
 		//get user input
 		if (B4 == true) {
@@ -400,8 +412,8 @@ function PlayerStateMachine() {
 				ctr = 0;
 			}
 		} else if (B3 == true) {
-			if (playerState != STATE_SHOOT) {
-				playerState = STATE_SHOOT;
+			if (playerState != STATE_ATTACK) {
+				playerState = STATE_ATTACK;
 				ctr = 0;
 			}
 		} else if (Key_D == true) {
@@ -412,6 +424,8 @@ function PlayerStateMachine() {
 			playerState = STATE_WALK;
 			playerFaceRight = false;
 			shooting_range = playerMapX - 70;
+		} else if (Key_C == true) {
+			playerState = STATE_CALL;
 		} else {
 			//play idle animation
 			PlayerStand()
@@ -452,44 +466,53 @@ function PlayerWalk() {
 }
 
 function PlayerJump() {
-	if (ctr > 21) {
+	if (ctr >= 21) {
 		playerState = STATE_IDLE;
-	} else {
-		if (playerFaceRight == true) {
-			if (Key_D == true) {
-				playerMapX += 5;
-				if (playerMapX > 1266 - 48) {
-					playerMapX = 1266 - 48;
-				}
-			} else if (Key_A == true) {
-				playerFaceRight = false;
+	}
+	if (playerFaceRight == true) {
+		if (Key_D == true) {
+			playerMapX += 5;
+			if (playerMapX > 1266 - 48) {
+				playerMapX = 1266 - 48;
 			}
-			Image:TBlit(playerMapX, 80, JumpR[ctr], Screen2)
-		} else {
-			if (Key_A == true) {
-				playerMapX -= 5;
-				if (playerMapX < 0) {
-					playerMapX = 0;
-				}
-			} else if (Key_D == true) {
-				playerFaceRight = true;
-			}
-			Image:TBlit(playerMapX, 80, JumpL[ctr], Screen2)
+		} else if (Key_A == true) {
+			playerFaceRight = false;
 		}
+		Image:TBlit(playerMapX, 80, JumpR[ctr], Screen2)
+	} else {
+		if (Key_A == true) {
+			playerMapX -= 5;
+			if (playerMapX < 0) {
+				playerMapX = 0;
+			}
+		} else if (Key_D == true) {
+			playerFaceRight = true;
+		}
+		Image:TBlit(playerMapX, 80, JumpL[ctr], Screen2)
+	}
+}
+
+function PlayerCall() {
+	if (ctr >= 23) {
+		playerState = STATE_IDLE;
+	}
+	if (playerFaceRight == true) {
+		Image:TBlit(playerMapX-2, 137, CallR[ctr], Screen2)
+	} else {
+		Image:TBlit(playerMapX, 137, CallL[ctr], Screen2)
 	}
 }
 
 function PlayerShoot() {
-	if (ctr > 16) {
+	if (ctr >= 15) {
 		playerState = STATE_IDLE;
+	}
+	if (playerFaceRight == true) {
+		Image:TBlit(playerMapX, 143, ShootR[ctr], Screen2)
+		Image:TBlit(playerMapX + 35, 123, SmokeR[ctr], Screen2)
 	} else {
-		if (playerFaceRight == true) {
-			Image:TBlit(playerMapX, 143, ShootR[ctr], Screen2)
-			Image:TBlit(playerMapX + 35, 123, SmokeR[ctr], Screen2)
-		} else {
-			Image:TBlit(playerMapX, 143, ShootL[ctr], Screen2)
-			Image:TBlit(playerMapX - 90, 123, SmokeL[ctr], Screen2)
-		}
+		Image:TBlit(playerMapX, 143, ShootL[ctr], Screen2)
+		Image:TBlit(playerMapX - 90, 123, SmokeL[ctr], Screen2)
 	}
 }
 
@@ -506,11 +529,10 @@ function PlayerStand() {
 }
 
 function PlayerKilled() {
-	if (ctr >= 19) {
+	if (ctr >= 18) {
 		playerState = STATE_IDLE;
 		exit = true;
 		ctr = 0;
-	} else {
-		Image:TBlit(playerMapX - 5, 143, Dead[ctr], Screen2)
 	}
+	Image:TBlit(playerMapX - 5, 143, Dead[ctr], Screen2)
 }
