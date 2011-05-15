@@ -1,6 +1,6 @@
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
    (c) 2008 Jesthony Maquiling [14 Aug]
-   (c) 2011 Mj Mendoza IV [12 May]
+   (c) 2011 Mj Mendoza IV [15 May]
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
  
 Var:Create(
@@ -38,13 +38,14 @@ Array:New AttackL[22]:Number;
 Array:New Dead[19]:Number;
 Array:New Burn[44]:Number;
 
-Var:Number ctr, car, playerFaceRight = true, rrr = 640, R = 1, RI = 1, RobI = false, Displacement, playerMapX;
+Var:Number ctr, car, playerFaceRight = true, robotMapX = 640, R = 1, robotImg = 1, Displacement, playerMapX;
 Var:Number i, tmp, shooting_range, Screen2, Points = 0, exit, LogoEnd, LogoMain, BG;
 
 Var:Number tmpLvl;
 Var:Number Level = 1;
 Var:Number zombieAlive = 3;
 Var:Number playerState = 0;
+Var:Number robotState  = 0;
 
 Var:Number STATE_IDLE   = 0;
 Var:Number STATE_WALK   = 1;
@@ -167,7 +168,7 @@ function main() {
 			Screen:CLS()
 				Image:Blit(0, 0, BG, Screen2)
 				Image:TBlit(50, 100, car, Screen2)
-				Robotic()
+				RobotStateMachine()
 				MummyStateMachine()
 				
 				PlayerStateMachine()
@@ -209,6 +210,7 @@ function MummyStateMachine() {
 		} else {
 			if (mummies[i].alive == true) {
 				MummyAlive(i)
+				Draw:RectFill(mummies[i].x, 140, 5, 5, 0xff0000, Screen2)
 				if (playerFaceRight == true) {
 					if (mummies[i].x < shooting_range) {
 						if (mummies[i].x > (playerMapX + 20)) {
@@ -231,47 +233,51 @@ function MummyStateMachine() {
 	}
 }
 
-function Robotic() {
-	Displacement = playerMapX - rrr;
+function RobotStand() {
+	robotImg++;
+	if (robotImg >= 5) {
+		robotImg = 0;
+	}
+	
+	if (playerFaceRight == true) {
+		Image:TBlit(robotMapX, 115, RobotIR[robotImg], Screen2)
+	} else {
+		Image:TBlit(robotMapX, 115, RobotIL[robotImg], Screen2)
+	}
+}
+
+function RobotWalk() {
+	robotImg++;
+	if (robotImg >= 16) {
+		robotImg = 0;
+	}
+	
+	if (playerMapX >= robotMapX) {
+		Image:TBlit(robotMapX, 115, RobotR[robotImg], Screen2)
+		robotMapX += 3;
+	} else {
+		Image:TBlit(robotMapX, 115, RobotL[robotImg], Screen2)
+		robotMapX -= 3;
+	}
+}
+
+function RobotStateMachine() {
+	Displacement = playerMapX - robotMapX;
 	if (Displacement < 0) {
+		//negate value
 		Displacement = Displacement * -1;
 	}
+	
 	if (3 >= Displacement) {
-		RobI = true;
+		robotState = STATE_IDLE;
 	} else {
-		RobI = false;
+		robotState = STATE_WALK;
 	}
-		
-	if (RobI == true) {
-		if (playerFaceRight == true) {
-			Image:TBlit(rrr, 115, RobotIR[RI], Screen2)
-			RI++;
-			if (RI >= 5) {
-				RI = 1;
-			}
-		} else {
-			Image:TBlit(rrr, 115, RobotIL[RI], Screen2)
-			RI++;
-			if (RI >= 5) {
-				RI=1;
-			}
-		}
-	} else {
-		if (playerMapX >= rrr) {
-			Image:TBlit(rrr, 115, RobotR[R], Screen2)
-			R++;
-			if (R >= 16) {
-				R = 1;
-			}
-			rrr += 3;
-		} else {
-			Image:TBlit(rrr, 115, RobotL[R], Screen2)
-			R++;
-			if (R >= 16) {
-				R = 1;
-			}
-			rrr -= 3;
-		}
+	
+	if (robotState == STATE_IDLE) {
+		RobotStand()
+	} else if (robotState == STATE_WALK) {
+		RobotWalk()
 	}
 }
 
@@ -304,14 +310,57 @@ function initMummy(Number index, Number speeddemon) {
 	Math:Random(1, 15, tmp)
 	mummies[index].img = tmp;
 	mummies[index].state = STATE_WALK;
-} 
+}
 
-function PlayerTryKill() {
-	if (playerState != STATE_JUMP) {
-		playerState = STATE_DIE;
-		ctr = 0;
+function MummyWalk(Number p_index) {
+	if (mummies[p_index].img >= 18) {
+		mummies[p_index].img = 1;
+	}
+	if (mummies[p_index].faceR == true) {
+		Image:TBlit(mummies[p_index].x, 137, MummiesR[mummies[p_index].img], Screen2)
+		mummies[p_index].x = (mummies[p_index].x + mummies[p_index].speed);
+	} else if (mummies[p_index].faceR == false) {
+		Image:TBlit(mummies[p_index].x, 137, MummiesL[mummies[p_index].img], Screen2)
+		mummies[p_index].x = (mummies[p_index].x - mummies[p_index].speed);
 	}
 }
+
+function MummyAttack(Number p_index) {
+	if (mummies[p_index].img >= 22) {
+		mummies[p_index].img = 1;
+	}
+	if (mummies[p_index].faceR == true) {
+		if (mummies[p_index].img == 11 ) {
+			if (playerMapX >= (mummies[p_index].x + 30)) {
+//				if (playerMapX <= (mummies[p_index].x + 10)) {
+					MummyTryKillPlayer()
+//				}
+			}
+		}
+		Image:TBlit(mummies[p_index].x, 126, AttackR[mummies[p_index].img], Screen2)
+//		Draw:RectFill(mummies[p_index].x, 126, (playerMapX - mummies[p_index].x), 5, 0xff0000, Screen2)
+	} else {
+		if (mummies[p_index].img == 11) {
+			if (playerMapX >= (mummies[p_index].x - 30)) {
+//				if (playerMapX <= mummies[p_index].x) {
+					MummyTryKillPlayer()
+//				}
+			}
+		}
+		Image:TBlit(mummies[p_index].x - 50, 126, AttackL[mummies[p_index].img], Screen2)
+//		Draw:RectFill(mummies[p_index].x, 126, (playerMapX - mummies[p_index].x), 5, 0x0000ff, Screen2)
+	}
+}
+
+function MummyTryKillPlayer() {
+	if (playerState != STATE_JUMP) {
+		if (playerState != STATE_DIE) {
+			playerState = STATE_DIE;
+			ctr = 0;
+		}
+	}
+}
+
 function MummyAlive(Number p_index) {
 	//determine direction
 	if (playerMapX >= mummies[p_index].x + 5) {
@@ -333,39 +382,9 @@ function MummyAlive(Number p_index) {
 	//do state
 	mummies[p_index].img = mummies[p_index].img + 1;
 	if (mummies[p_index].state == STATE_WALK) {
-		if (mummies[p_index].img >= 18) {
-			mummies[p_index].img = 1;
-		}
-		if (mummies[p_index].faceR == true) {
-			Image:TBlit(mummies[p_index].x, 137, MummiesR[mummies[p_index].img], Screen2)
-			mummies[p_index].x = (mummies[p_index].x + mummies[p_index].speed);
-		} else if (mummies[p_index].faceR == false) {
-			Image:TBlit(mummies[p_index].x, 137, MummiesL[mummies[p_index].img], Screen2)
-			mummies[p_index].x = (mummies[p_index].x - mummies[p_index].speed);
-		}
+		MummyWalk(p_index)
 	} else if (mummies[p_index].state == STATE_ATTACK) {
-		if (mummies[p_index].img >= 22) {
-			mummies[p_index].img = 1;
-		}
-		if (mummies[p_index].faceR == true) {
-			if (mummies[p_index].img == 11 ) {
-				if (playerMapX >= (mummies[p_index].x + 30)) {
-					if (playerMapX <= (mummies[p_index].x + 10)) {
-						PlayerTryKill()
-					}
-				}
-			}
-			Image:TBlit(mummies[p_index].x, 126, AttackR[mummies[p_index].img], Screen2)
-		} else {
-			if (mummies[p_index].img == 11) {
-				if (playerMapX >= (mummies[p_index].x - 30)) {
-					if (playerMapX <= mummies[p_index].x) {
-						PlayerTryKill()
-					}
-				}
-			}
-			Image:TBlit(mummies[p_index].x - 50, 126, AttackL[mummies[p_index].img], Screen2)
-		}
+		MummyAttack(p_index)
 	}
 }
 
@@ -419,11 +438,9 @@ function PlayerStateMachine() {
 		} else if (Key_D == true) {
 			playerState = STATE_WALK;
 			playerFaceRight = true;
-			shooting_range = playerMapX + 100;
 		} else if (Key_A == true) {
 			playerState = STATE_WALK;
 			playerFaceRight = false;
-			shooting_range = playerMapX - 70;
 		} else if (Key_C == true) {
 			playerState = STATE_CALL;
 		} else {
@@ -431,13 +448,19 @@ function PlayerStateMachine() {
 			PlayerStand()
 		}
 	}
+	if (playerFaceRight == true) {
+		shooting_range = playerMapX + 100;
+	} else { //GOD AS: if (playerFaceRight == false) {
+		shooting_range = playerMapX - 70;
+	}
+	Draw:RectFill(playerMapX, 140, 5, 5, 0x0000ff, Screen2)
+	Draw:RectFill(shooting_range, 140, 5, 5, 0xff9900, Screen2)
 }
 
 function PlayerWalk() {
 	if (ctr >= 12) {
 		ctr = 0;
 	}
-	
 	if (playerFaceRight == true) { 
 		Image:TBlit(playerMapX, 140, WalkingR[ctr], Screen2)
 		playerMapX += 4;
@@ -494,6 +517,7 @@ function PlayerJump() {
 
 function PlayerCall() {
 	if (ctr >= 23) {
+		
 		playerState = STATE_IDLE;
 	}
 	if (playerFaceRight == true) {
