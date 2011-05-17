@@ -4,6 +4,17 @@
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
  
 Var:Create(
+	Bullet, 
+		Number x,
+		Number y,
+		Number imgR,
+		Number imgL,
+		Boolean used,
+		Boolean faceRight
+)
+Array:New bullets[24]:Bullet;
+
+Var:Create(
 	Mummy, 
 		Number x,
 		Number y,
@@ -11,7 +22,7 @@ Var:Create(
 		Boolean alive,
 		Number speed,
 		Number state,
-		Boolean faceR
+		Boolean faceRight
 )
 Array:New mummies[20]:Mummy;
 
@@ -27,10 +38,12 @@ Array:New ShootL[17]:Number;
 Array:New SmokeL[17]:Number;
 Array:New ShootR[17]:Number;
 Array:New SmokeR[17]:Number;
-Array:New RobotL[17]:Number;
-Array:New RobotR[17]:Number;
-Array:New RobotIL[5]:Number;
-Array:New RobotIR[5]:Number;
+Array:New RobotWalkL[17]:Number;
+Array:New RobotWalkR[17]:Number;
+Array:New RobotIdleL[5]:Number;
+Array:New RobotIdleR[5]:Number;
+Array:New RobotAttackL[12]:Number;
+Array:New RobotAttackR[12]:Number;
 Array:New MummiesR[18]:Number;
 Array:New MummiesL[18]:Number;
 Array:New AttackR[22]:Number;
@@ -38,14 +51,22 @@ Array:New AttackL[22]:Number;
 Array:New Dead[19]:Number;
 Array:New Burn[44]:Number;
 
-Var:Number ctr, car, playerFaceRight = true, robotMapX = 640, R = 1, robotImg = 1, Displacement, playerMapX;
-Var:Number i, tmp, shooting_range, Screen2, Points = 0, exit, LogoEnd, LogoMain, BG;
+Var:Number ctr, car, playerFaceRight = true, Displacement, playerMapX;
+Var:Number i, tmp, shooting_range, Screen2, Points = 0, LogoEnd, LogoMain, BG;
+
+Var:Boolean exit;
+Var:Number bulletR;
+Var:Number bulletL;
 
 Var:Number tmpLvl;
 Var:Number Level = 1;
 Var:Number zombieAlive = 3;
 Var:Number playerState = 0;
+
 Var:Number robotState  = 0;
+Var:Number robotMapX = 640;
+Var:Number robotImg = 1;
+Var:Number robotFaceRight = 0;
 
 Var:Number STATE_IDLE   = 0;
 Var:Number STATE_WALK   = 1;
@@ -68,6 +89,13 @@ function initGFX() {
 	Image:Load("img\\menu\\LogoEnd.png", LogoEnd)
 	Image:Load("img\\menu\\LogoMain.png", LogoMain)
 	
+	Image:Load("img\\bullet\\R.png", bulletR)
+	Image:Load("img\\bullet\\L.png", bulletL)
+	for (ctr = 1; ctr <= 24; ctr++) {
+		bullets[ctr-1].imgR = bulletR;
+		bullets[ctr-1].imgL = bulletL;
+	}
+	
 	for (ctr = 1; ctr <= 22; ctr++) {
 		Image:Load("img\\Mummy\\Attack\\R (" + ctr + ").png", tmp)
 			AttackR[ctr - 1] = tmp;
@@ -89,15 +117,21 @@ function initGFX() {
 	}
 	for (ctr = 1; ctr <= 17; ctr++){
 		Image:Load("img\\Robot\\Walk\\R (" + ctr + ").png", tmp)
-			RobotR[ctr - 1] = tmp;
+			RobotWalkR[ctr - 1] = tmp;
 		Image:Load("img\\Robot\\Walk\\L (" + ctr + ").png", tmp)
-			RobotL[ctr - 1] = tmp;
+			RobotWalkL[ctr - 1] = tmp;
 	}
 	for (ctr = 1; ctr <=  5; ctr++) {
 		Image:Load("img\\Robot\\Idle\\R (" + ctr + ").png", tmp)
-			RobotIR[ctr - 1] = tmp;
+			RobotIdleR[ctr - 1] = tmp;
 		Image:Load("img\\Robot\\Idle\\L (" + ctr + ").png", tmp)
-			RobotIL[ctr - 1] = tmp;
+			RobotIdleL[ctr - 1] = tmp;
+	}
+	for (ctr = 1; ctr <=  12; ctr++) {
+		Image:Load("img\\Robot\\Shoot\\R (" + ctr + ").png", tmp)
+			RobotAttackR[ctr - 1] = tmp;
+		Image:Load("img\\Robot\\Shoot\\L (" + ctr + ").png", tmp)
+			RobotAttackL[ctr - 1] = tmp;
 	}
 	for (ctr = 1; ctr <= 12; ctr++) {
 		Image:Load("img\\Player\\Walk\\R (" + ctr + ").png", tmp)
@@ -151,6 +185,8 @@ function main() {
 		Points = 0;
 		exit = false;
 		playerMapX = 640;
+		playerState = STATE_IDLE;
+		robotState = STATE_IDLE;
 		
 		spawnMummy()
 		
@@ -172,6 +208,8 @@ function main() {
 				MummyStateMachine()
 				
 				PlayerStateMachine()
+				
+				RenderBullet()
 				
 				if ( (300 - playerMapX) > 0) {
 					Image:Blit(0, 20, Screen2, screen)
@@ -203,36 +241,6 @@ function main() {
 	}
 }
 
-function MummyStateMachine() {
-	for (i = 0; i < zombieAlive; i++) {
-		if (mummies[i].state == STATE_DIE) {
-			MummyDie(i)
-		} else {
-			if (mummies[i].alive == true) {
-				MummyAlive(i)
-				Draw:RectFill(mummies[i].x, 140, 5, 5, 0xff0000, Screen2)
-				if (playerFaceRight == true) {
-					if (mummies[i].x < shooting_range) {
-						if (mummies[i].x > (playerMapX + 20)) {
-							if (playerState == STATE_ATTACK) {
-								mummies[i].state = STATE_DIE;
-							}
-						}
-					}
-				} else {
-					if (mummies[i].x > shooting_range) {
-						if (mummies[i].x < playerMapX) {
-							if (playerState == STATE_ATTACK) {	
-								mummies[i].state = STATE_DIE;
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-}
-
 function RobotStand() {
 	robotImg++;
 	if (robotImg >= 5) {
@@ -240,9 +248,11 @@ function RobotStand() {
 	}
 	
 	if (playerFaceRight == true) {
-		Image:TBlit(robotMapX, 115, RobotIR[robotImg], Screen2)
+		robotFaceRight = true;
+		Image:TBlit(robotMapX, 115, RobotIdleR[robotImg], Screen2)
 	} else {
-		Image:TBlit(robotMapX, 115, RobotIL[robotImg], Screen2)
+		robotFaceRight = false;
+		Image:TBlit(robotMapX, 115, RobotIdleL[robotImg], Screen2)
 	}
 }
 
@@ -252,12 +262,45 @@ function RobotWalk() {
 		robotImg = 0;
 	}
 	
-	if (playerMapX >= robotMapX) {
-		Image:TBlit(robotMapX, 115, RobotR[robotImg], Screen2)
+	if (robotFaceRight == true) {
+		Image:TBlit(robotMapX, 118, RobotWalkR[robotImg], Screen2)
 		robotMapX += 3;
 	} else {
-		Image:TBlit(robotMapX, 115, RobotL[robotImg], Screen2)
+		Image:TBlit(robotMapX, 118, RobotWalkL[robotImg], Screen2)
 		robotMapX -= 3;
+	}
+}
+
+function spawnBullet(Number p_faceRight) {
+	bullets[bulletCtr].used = true;
+	bullets[bulletCtr].x = robotMapX - 10;
+	Math:Random(0, 5, tmp)
+	bullets[bulletCtr].y = tmp;
+	bullets[bulletCtr].faceRight = p_faceRight;
+	bulletCtr++;
+	if (bulletCtr >= 24) {
+		bulletCtr = 0;
+	}
+}
+
+function RobotAttack() {
+	robotImg++;
+	if (robotImg >= 11) {
+		robotState = STATE_IDLE;
+	}
+	
+	if (robotImg == 3) {
+		spawnBullet(robotFaceRight)
+	} else if (robotImg == 6) {
+		spawnBullet(robotFaceRight)
+	} else if (robotImg == 9) {
+		spawnBullet(robotFaceRight)
+	}
+	
+	if (robotFaceRight == true) {
+		Image:TBlit(robotMapX + 2, 119, RobotAttackR[robotImg], Screen2)
+	} else {
+		Image:TBlit(robotMapX - 30, 119, RobotAttackL[robotImg], Screen2)
 	}
 }
 
@@ -268,16 +311,20 @@ function RobotStateMachine() {
 		Displacement = Displacement * -1;
 	}
 	
-	if (3 >= Displacement) {
-		robotState = STATE_IDLE;
+	if (robotState == STATE_ATTACK) {
+		RobotAttack()
 	} else {
-		robotState = STATE_WALK;
-	}
-	
-	if (robotState == STATE_IDLE) {
-		RobotStand()
-	} else if (robotState == STATE_WALK) {
-		RobotWalk()
+		if (3 >= Displacement) {
+			robotState = STATE_IDLE;
+		} else {
+			robotState = STATE_WALK;
+		}
+		
+		if (robotState == STATE_IDLE) {
+			RobotStand()
+		} else if (robotState == STATE_WALK) {
+			RobotWalk()
+		}
 	}
 }
 
@@ -312,14 +359,44 @@ function initMummy(Number index, Number speeddemon) {
 	mummies[index].state = STATE_WALK;
 }
 
+function MummyStateMachine() {
+	for (i = 0; i < zombieAlive; i++) {
+		if (mummies[i].state == STATE_DIE) {
+			MummyDie(i)
+		} else {
+			if (mummies[i].alive == true) {
+				MummyAlive(i)
+				Draw:RectFill(mummies[i].x, 140, 5, 5, 0xff0000, Screen2)
+				if (playerFaceRight == true) {
+					if (mummies[i].x < shooting_range) {
+						if (mummies[i].x > (playerMapX + 20)) {
+							if (playerState == STATE_ATTACK) {
+								mummies[i].state = STATE_DIE;
+							}
+						}
+					}
+				} else {
+					if (mummies[i].x > shooting_range) {
+						if (mummies[i].x < playerMapX) {
+							if (playerState == STATE_ATTACK) {	
+								mummies[i].state = STATE_DIE;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
 function MummyWalk(Number p_index) {
 	if (mummies[p_index].img >= 18) {
 		mummies[p_index].img = 1;
 	}
-	if (mummies[p_index].faceR == true) {
+	if (mummies[p_index].faceRight == true) {
 		Image:TBlit(mummies[p_index].x, 137, MummiesR[mummies[p_index].img], Screen2)
 		mummies[p_index].x = (mummies[p_index].x + mummies[p_index].speed);
-	} else if (mummies[p_index].faceR == false) {
+	} else if (mummies[p_index].faceRight == false) {
 		Image:TBlit(mummies[p_index].x, 137, MummiesL[mummies[p_index].img], Screen2)
 		mummies[p_index].x = (mummies[p_index].x - mummies[p_index].speed);
 	}
@@ -329,7 +406,7 @@ function MummyAttack(Number p_index) {
 	if (mummies[p_index].img >= 22) {
 		mummies[p_index].img = 1;
 	}
-	if (mummies[p_index].faceR == true) {
+	if (mummies[p_index].faceRight == true) {
 		if (mummies[p_index].img == 11 ) {
 			if (playerMapX >= (mummies[p_index].x + 30)) {
 //				if (playerMapX <= (mummies[p_index].x + 10)) {
@@ -364,9 +441,9 @@ function MummyTryKillPlayer() {
 function MummyAlive(Number p_index) {
 	//determine direction
 	if (playerMapX >= mummies[p_index].x + 5) {
-		mummies[p_index].faceR = true;
+		mummies[p_index].faceRight = true;
 	} else if (playerMapX + 5 <= mummies[p_index].x) {
-		mummies[p_index].faceR = false;
+		mummies[p_index].faceRight = false;
 	}
 	
 	//determine state
@@ -485,6 +562,11 @@ function PlayerWalk() {
 			playerState = STATE_JUMP;
 			ctr = 0;
 		}
+	} else if (B3 == true) {
+		if (playerState != STATE_ATTACK) {
+			playerState = STATE_ATTACK;
+			ctr = 0;
+		}
 	}
 }
 
@@ -517,8 +599,8 @@ function PlayerJump() {
 
 function PlayerCall() {
 	if (ctr >= 23) {
-		
 		playerState = STATE_IDLE;
+		robotState = STATE_ATTACK;
 	}
 	if (playerFaceRight == true) {
 		Image:TBlit(playerMapX-2, 137, CallR[ctr], Screen2)
@@ -559,4 +641,19 @@ function PlayerKilled() {
 		ctr = 0;
 	}
 	Image:TBlit(playerMapX - 5, 143, Dead[ctr], Screen2)
+}
+
+Var:Number bulletCtr;
+function RenderBullet() {
+	for (i = 0; i < 22; i++) {
+		if (bullets[i].used == true) {
+			if (bullets[i].faceRight == true) {
+				Image:TBlit(bullets[i].x + 100, bullets[i].y + 145, bullets[ctr].imgR, Screen2)
+				bullets[i].x = bullets[i].x + 10;
+			} else {
+				Image:TBlit(bullets[i].x, bullets[i].y + 145, bullets[ctr].imgL, Screen2)
+				bullets[i].x = bullets[i].x - 10;
+			}
+		}
+	}
 }
