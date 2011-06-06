@@ -1,6 +1,6 @@
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
    (c) 2008 Jesthony Maquiling [14 Aug]
-   (c) 2011 Mj Mendoza IV [15 May]
+   (c) 2011 Mj Mendoza IV [06 June]
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
  
 Var:Create(
@@ -52,7 +52,7 @@ Array:New Dead[19]:Number;
 Array:New Burn[44]:Number;
 
 Var:Number ctr, car, playerFaceRight = true, Displacement, playerMapX;
-Var:Number i, tmp, shooting_range, Screen2, Points = 0, LogoEnd, LogoMain, BG;
+Var:Number i, tmp, shooting_range, world, Points = 0, LogoEnd, LogoMain, BG;
 
 Var:Boolean exit;
 Var:Number bulletR;
@@ -83,7 +83,7 @@ Var:Boolean Key_C;
 
 function initGFX() {
   Screen:Show()
-	Image:New(1266, 443, Screen2)
+	Image:New(1266, 443, world)
 	Image:Load("img\\Map\\BG.png", BG)
 	Image:Load("img\\Map\\car.png", car)
 	Image:Load("img\\menu\\LogoEnd.png", LogoEnd)
@@ -186,7 +186,13 @@ function main() {
 		exit = false;
 		playerMapX = 640;
 		playerState = STATE_IDLE;
+		
 		robotState = STATE_IDLE;
+		if (playerMapX > robotMapX) {
+			robotFaceRight = true;
+		} else {
+			robotFaceRight = false;
+		}
 		
 		spawnMummy()
 		
@@ -202,8 +208,8 @@ function main() {
 	//main loop
 		while (exit == false) {
 			Screen:CLS()
-				Image:Blit(0, 0, BG, Screen2)
-				Image:TBlit(50, 100, car, Screen2)
+				Image:Blit(0, 0, BG, world)
+				Image:TBlit(50, 100, car, world)
 				RobotStateMachine()
 				MummyStateMachine()
 				
@@ -212,11 +218,11 @@ function main() {
 				RenderBullet()
 				
 				if ( (300 - playerMapX) > 0) {
-					Image:Blit(0, 20, Screen2, screen)
+					Image:Blit(0, 20, world, screen)
 				} else if (300 + playerMapX < 1266 - 48) { //48 is player-walk-image-width: see Player\Walk\L (1).png
-					Image:Blit(300 - playerMapX, 20, Screen2, screen)
+					Image:Blit(300 - playerMapX, 20, world, screen)
 				} else {
-					Image:Blit(600 - 1266 + 48, 20, Screen2, screen) //48 is player-walk-image-width: see Player\Walk\L (1).png
+					Image:Blit(600 - 1266 + 48, 20, world, screen) //48 is player-walk-image-width: see Player\Walk\L (1).png
 				}
 				Screen:PrintString(Points)
 			Screen:Render()
@@ -249,10 +255,10 @@ function RobotStand() {
 	
 	if (playerFaceRight == true) {
 		robotFaceRight = true;
-		Image:TBlit(robotMapX, 115, RobotIdleR[robotImg], Screen2)
+		Image:TBlit(robotMapX, 115, RobotIdleR[robotImg], world)
 	} else {
 		robotFaceRight = false;
-		Image:TBlit(robotMapX, 115, RobotIdleL[robotImg], Screen2)
+		Image:TBlit(robotMapX, 115, RobotIdleL[robotImg], world)
 	}
 }
 
@@ -263,23 +269,11 @@ function RobotWalk() {
 	}
 	
 	if (robotFaceRight == true) {
-		Image:TBlit(robotMapX, 118, RobotWalkR[robotImg], Screen2)
+		Image:TBlit(robotMapX, 118, RobotWalkR[robotImg], world)
 		robotMapX += 3;
 	} else {
-		Image:TBlit(robotMapX, 118, RobotWalkL[robotImg], Screen2)
+		Image:TBlit(robotMapX, 118, RobotWalkL[robotImg], world)
 		robotMapX -= 3;
-	}
-}
-
-function spawnBullet(Number p_faceRight) {
-	bullets[bulletCtr].used = true;
-	bullets[bulletCtr].x = robotMapX - 10;
-	Math:Random(0, 5, tmp)
-	bullets[bulletCtr].y = tmp;
-	bullets[bulletCtr].faceRight = p_faceRight;
-	bulletCtr++;
-	if (bulletCtr >= 24) {
-		bulletCtr = 0;
 	}
 }
 
@@ -298,9 +292,9 @@ function RobotAttack() {
 	}
 	
 	if (robotFaceRight == true) {
-		Image:TBlit(robotMapX + 2, 119, RobotAttackR[robotImg], Screen2)
+		Image:TBlit(robotMapX + 2, 119, RobotAttackR[robotImg], world)
 	} else {
-		Image:TBlit(robotMapX - 30, 119, RobotAttackL[robotImg], Screen2)
+		Image:TBlit(robotMapX - 30, 119, RobotAttackL[robotImg], world)
 	}
 }
 
@@ -334,7 +328,7 @@ function spawnMummy() {
 	}
 }
 
-function initMummy(Number index, Number speeddemon) { 
+function initMummy(Number index, Number speed) { 
 	Math:Random(0, 1266, tmp)
 	if (tmp > (playerMapX-100)) {
 		if (tmp < (playerMapX + 100)) {
@@ -346,12 +340,12 @@ function initMummy(Number index, Number speeddemon) {
 		}
 	}
 	
-	mummies[index].x = tmp; 
-	mummies[index].alive = true; 
-	if (speeddemon == 0 ) {
+	mummies[index].x = tmp;
+	mummies[index].alive = true;
+	if (speed == 0 ) {
 		Math:Random(1, 2, tmp)
 	} else {
-		tmp = speeddemon + 0.1;
+		tmp = speed + 0.1;
 	}
 	mummies[index].speed = tmp;
 	Math:Random(1, 15, tmp)
@@ -366,7 +360,7 @@ function MummyStateMachine() {
 		} else {
 			if (mummies[i].alive == true) {
 				MummyAlive(i)
-				Draw:RectFill(mummies[i].x, 140, 5, 5, 0xff0000, Screen2)
+				Draw:RectFill(mummies[i].x, 140, 5, 5, 0xff0000, world)
 				if (playerFaceRight == true) {
 					if (mummies[i].x < shooting_range) {
 						if (mummies[i].x > (playerMapX + 20)) {
@@ -394,10 +388,10 @@ function MummyWalk(Number p_index) {
 		mummies[p_index].img = 1;
 	}
 	if (mummies[p_index].faceRight == true) {
-		Image:TBlit(mummies[p_index].x, 137, MummiesR[mummies[p_index].img], Screen2)
+		Image:TBlit(mummies[p_index].x, 137, MummiesR[mummies[p_index].img], world)
 		mummies[p_index].x = (mummies[p_index].x + mummies[p_index].speed);
 	} else if (mummies[p_index].faceRight == false) {
-		Image:TBlit(mummies[p_index].x, 137, MummiesL[mummies[p_index].img], Screen2)
+		Image:TBlit(mummies[p_index].x, 137, MummiesL[mummies[p_index].img], world)
 		mummies[p_index].x = (mummies[p_index].x - mummies[p_index].speed);
 	}
 }
@@ -414,8 +408,8 @@ function MummyAttack(Number p_index) {
 //				}
 			}
 		}
-		Image:TBlit(mummies[p_index].x, 126, AttackR[mummies[p_index].img], Screen2)
-//		Draw:RectFill(mummies[p_index].x, 126, (playerMapX - mummies[p_index].x), 5, 0xff0000, Screen2)
+		Image:TBlit(mummies[p_index].x, 126, AttackR[mummies[p_index].img], world)
+//		Draw:RectFill(mummies[p_index].x, 126, (playerMapX - mummies[p_index].x), 5, 0xff0000, world)
 	} else {
 		if (mummies[p_index].img == 11) {
 			if (playerMapX >= (mummies[p_index].x - 30)) {
@@ -424,8 +418,8 @@ function MummyAttack(Number p_index) {
 //				}
 			}
 		}
-		Image:TBlit(mummies[p_index].x - 50, 126, AttackL[mummies[p_index].img], Screen2)
-//		Draw:RectFill(mummies[p_index].x, 126, (playerMapX - mummies[p_index].x), 5, 0x0000ff, Screen2)
+		Image:TBlit(mummies[p_index].x - 50, 126, AttackL[mummies[p_index].img], world)
+//		Draw:RectFill(mummies[p_index].x, 126, (playerMapX - mummies[p_index].x), 5, 0x0000ff, world)
 	}
 }
 
@@ -466,7 +460,7 @@ function MummyAlive(Number p_index) {
 }
 
 function MummyDie(Number p_index) {
-	Image:TBlit(mummies[p_index].x - 8, 120, Burn[mummies[p_index].img], Screen2)
+	Image:TBlit(mummies[p_index].x - 8, 120, Burn[mummies[p_index].img], world)
 	
 	Points = Points + mummies[p_index].speed;
 	tmpLvl = Points / 1000;
@@ -530,8 +524,8 @@ function PlayerStateMachine() {
 	} else { //GOD AS: if (playerFaceRight == false) {
 		shooting_range = playerMapX - 70;
 	}
-	Draw:RectFill(playerMapX, 140, 5, 5, 0x0000ff, Screen2)
-	Draw:RectFill(shooting_range, 140, 5, 5, 0xff9900, Screen2)
+	Draw:RectFill(playerMapX, 140, 5, 5, 0x0000ff, world)
+	Draw:RectFill(shooting_range, 140, 5, 5, 0xff9900, world)
 }
 
 function PlayerWalk() {
@@ -539,7 +533,7 @@ function PlayerWalk() {
 		ctr = 0;
 	}
 	if (playerFaceRight == true) { 
-		Image:TBlit(playerMapX, 140, WalkingR[ctr], Screen2)
+		Image:TBlit(playerMapX, 140, WalkingR[ctr], world)
 		playerMapX += 4;
 		if (playerMapX > 1266 - 48) {
 			playerMapX = 1266 - 48;
@@ -548,7 +542,7 @@ function PlayerWalk() {
 			playerState = STATE_IDLE;
 		}
 	} else {
-		Image:TBlit((playerMapX - 10), 140, WalkingL[ctr], Screen2)
+		Image:TBlit((playerMapX - 10), 140, WalkingL[ctr], world)
 		playerMapX -= 4;
 		if (playerMapX < 0) {
 			playerMapX = 0;
@@ -583,7 +577,7 @@ function PlayerJump() {
 		} else if (Key_A == true) {
 			playerFaceRight = false;
 		}
-		Image:TBlit(playerMapX, 80, JumpR[ctr], Screen2)
+		Image:TBlit(playerMapX, 80, JumpR[ctr], world)
 	} else {
 		if (Key_A == true) {
 			playerMapX -= 5;
@@ -593,7 +587,7 @@ function PlayerJump() {
 		} else if (Key_D == true) {
 			playerFaceRight = true;
 		}
-		Image:TBlit(playerMapX, 80, JumpL[ctr], Screen2)
+		Image:TBlit(playerMapX, 80, JumpL[ctr], world)
 	}
 }
 
@@ -603,9 +597,9 @@ function PlayerCall() {
 		robotState = STATE_ATTACK;
 	}
 	if (playerFaceRight == true) {
-		Image:TBlit(playerMapX-2, 137, CallR[ctr], Screen2)
+		Image:TBlit(playerMapX-2, 137, CallR[ctr], world)
 	} else {
-		Image:TBlit(playerMapX, 137, CallL[ctr], Screen2)
+		Image:TBlit(playerMapX, 137, CallL[ctr], world)
 	}
 }
 
@@ -614,11 +608,11 @@ function PlayerShoot() {
 		playerState = STATE_IDLE;
 	}
 	if (playerFaceRight == true) {
-		Image:TBlit(playerMapX, 143, ShootR[ctr], Screen2)
-		Image:TBlit(playerMapX + 35, 123, SmokeR[ctr], Screen2)
+		Image:TBlit(playerMapX, 143, ShootR[ctr], world)
+		Image:TBlit(playerMapX + 35, 123, SmokeR[ctr], world)
 	} else {
-		Image:TBlit(playerMapX, 143, ShootL[ctr], Screen2)
-		Image:TBlit(playerMapX - 90, 123, SmokeL[ctr], Screen2)
+		Image:TBlit(playerMapX, 143, ShootL[ctr], world)
+		Image:TBlit(playerMapX - 90, 123, SmokeL[ctr], world)
 	}
 }
 
@@ -628,32 +622,45 @@ function PlayerStand() {
 	}
 	
 	if (playerFaceRight == true) {
-		Image:TBlit(playerMapX, 143, StandingR[ctr], Screen2)
+		Image:TBlit(playerMapX, 143, StandingR[ctr], world)
 	} else {
-		Image:TBlit(playerMapX, 143, StandingL[ctr], Screen2)
+		Image:TBlit(playerMapX, 143, StandingL[ctr], world)
 	}
 }
 
 function PlayerKilled() {
 	if (ctr >= 18) {
 		playerState = STATE_IDLE;
+		robotState = STATE_IDLE;
 		exit = true;
 		ctr = 0;
 	}
-	Image:TBlit(playerMapX - 5, 143, Dead[ctr], Screen2)
+	Image:TBlit(playerMapX - 5, 143, Dead[ctr], world)
 }
 
 Var:Number bulletCtr;
 function RenderBullet() {
-	for (i = 0; i < 22; i++) {
+	for (i = 0; i < 20; i++) {
 		if (bullets[i].used == true) {
 			if (bullets[i].faceRight == true) {
-				Image:TBlit(bullets[i].x + 100, bullets[i].y + 145, bullets[ctr].imgR, Screen2)
+				Image:TBlit(bullets[i].x + 100, bullets[i].y + 145, bullets[ctr].imgR, world)
 				bullets[i].x = bullets[i].x + 10;
 			} else {
-				Image:TBlit(bullets[i].x, bullets[i].y + 145, bullets[ctr].imgL, Screen2)
+				Image:TBlit(bullets[i].x, bullets[i].y + 145, bullets[ctr].imgL, world)
 				bullets[i].x = bullets[i].x - 10;
 			}
 		}
+	}
+}
+
+function spawnBullet(Number p_faceRight) {
+	bullets[bulletCtr].used = true;
+	bullets[bulletCtr].x = robotMapX - 10;
+	Math:Random(0, 5, tmp)
+	bullets[bulletCtr].y = tmp;
+	bullets[bulletCtr].faceRight = p_faceRight;
+	bulletCtr++;
+	if (bulletCtr >= 20) {
+		bulletCtr = 0;
 	}
 }
